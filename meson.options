@@ -1,0 +1,1 @@
+option('boost-study', type: 'feature', value: 'enabled', description: 'Build boost study code.')

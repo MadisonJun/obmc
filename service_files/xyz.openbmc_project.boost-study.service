@@ -1,0 +1,12 @@
+[Unit]
+Description=boost study
+
+[Service]
+Type=dbus
+BusName=xyz.openbmc_project.boost.study
+Restart=always
+RestartSec=5
+ExecStart=/usr/libexec/obmc-study/boost-study
+
+[Install]
+WantedBy=multi-user.target
