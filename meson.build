@@ -9,10 +9,12 @@ project(
 
 boost = dependency('boost', required: false)
 sdbusplus = dependency('sdbusplus', include_type: 'system')
+logging = dependency('phosphor-logging')
 
 default_deps = [
     boost,
     sdbusplus,
+    logging,
 ]
 
 subdir('service_files')
