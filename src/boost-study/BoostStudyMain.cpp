@@ -14,6 +14,7 @@ int main()
 {
     /* code */
     boost::asio::io_context io;
+    std::map<std::string, std::weak_ptr<sdbusplus::asio::dbus_interface>> interfaces;
     auto systemBus = std::make_shared<sdbusplus::asio::connection>(io);
     systemBus->request_name(busName); // Request a well-known name on the bus
 
@@ -65,23 +66,61 @@ int main()
         }));
 
     // Matches the InterfacesAdded signal on the {managerObjectPath} object path.
+    // oa{sa{sv}}: object path {interfaces {property}}
+    // Eg: busctl emit {managerObjectPath} org.freedesktop.DBus.ObjectManager InterfacesAdded oa{sa{sv}} "/xyz/openbmc_project/boost/study"  1 "Sensor1" 2 "Value" d 25.5 "Unit" s "C"
     matches.emplace_back(std::make_unique<sdbusplus::bus::match_t>(
         *systemBus,
         sbmr_t::interfacesAdded(managerObjectPath),
-        [](sdbusplus::message_t &msg)
+        [&interfaces, &objServer](sdbusplus::message_t &msg)
         {
             // TODO : parse the message to get the interfaces added and their object paths
-            lg2::info("Interfaces added at path: {PATH}, interfaces: {INTERFACES}", "PATH", msg.get_path(), "INTERFACES", msg.get_interface());
+            auto [objPath, boostData] = msg.unpack<sdbusplus::object_path, boostDateType>();
+            for (const auto &[interfaceName, properties] : boostData)
+            {
+                std::string path = objPath.str + "/" + interfaceName;
+                if (interfaces.contains(path))
+                    return;
+                // Note: An interface must contain at least one. xyz.{interfaceName}
+                auto iface = objServer.add_interface(path, interfaceHeader + interfaceName);
+                for (auto [propertyName, propertyValue] : properties)
+                {
+                    // For simplicity, we are treating all properties as read-only and of type string.
+                    // In a real implementation, you would want to handle different types and read/write permissions.
+                    iface->register_property(
+                        propertyName, propertyValue,
+                        sdbusplus::asio::PropertyPermission::readOnly
+                        /*sdbusplus::asio::PropertyPermission::readWrite,
+                        writeFn:[](const auto & value,auto & currentValue){}*/
+                    );
+                }
+
+                if (iface->initialize(true))
+                    interfaces[path] = iface;
+                lg2::debug("Registration status: {STATUS} for interface {IFACE} at path: {PATH}", "STATUS", interfaces.contains(path) ? "Success" : "Failed", "IFACE", interfaceHeader + interfaceName, "PATH", path);
+            }
         }));
 
     // Matches the InterfacesRemoved signal on the {managerObjectPath} object path.
+    // oas : object path {interfaces}
+    // Eg: busctl emit {managerObjectPath} org.freedesktop.DBus.ObjectManager InterfacesRemoved  oas "/xyz/openbmc_project/boost/study" 1  "Sensor1"
     matches.emplace_back(std::make_unique<sdbusplus::bus::match_t>(
         *systemBus,
         sbmr_t::interfacesRemoved(managerObjectPath),
-        [](sdbusplus::message_t &msg)
+        [&](sdbusplus::message_t &msg)
         {
             // TODO : parse the message to get the interfaces removed and their object paths
-            lg2::info("Interfaces removed at path: {PATH}, interfaces: {INTERFACES}", "PATH", msg.get_path(), "INTERFACES", msg.get_interface());
+            auto [objPath, interfaceNames] = msg.unpack<sdbusplus::object_path, std::vector<std::string>>();
+            for (const auto &interfaceName : interfaceNames)
+            {
+                std::string path = objPath.str + "/" + interfaceName;
+                if (interfaces.contains(path))
+                {
+                    lg2::debug("Removing interface at path: {PATH}", "PATH", path);
+                    objServer.remove_interface(interfaces[path].lock());
+                    interfaces.erase(path);
+                    lg2::info("remove Obj {OBJ} success", "OBJ", path);
+                }
+            }
         }));
 
     // loop forever
