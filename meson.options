@@ -1,1 +1,7 @@
 option('boost-study', type: 'feature', value: 'enabled', description: 'Build boost study code.')
+
+option('sd-socket', type: 'feature', value: 'enabled', description: 'Build sd-socket code.')
+option('max_events',type: 'integer',value: 10, description: 'Maximum number of simultaneous connections for the SD socket service.')
+option('sd_socket_port',type: 'integer',value: 6234, description: 'SD socket service port configuration.')
+option('usetcp',type: 'boolean',value: true, description: 'Enable TCP connections for the SD socket.')
+option('useudp',type: 'boolean',value: false, description: 'Enable UDP connections for the SD socket.')

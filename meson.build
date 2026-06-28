@@ -17,5 +17,7 @@ default_deps = [
     logging,
 ]
 
+subdir('config')
+
 subdir('service_files')
 subdir('src')

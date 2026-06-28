@@ -1,0 +1,7 @@
+#pragma once
+#include <cstddef>
+
+static constexpr auto MAX_EVENTS = @max_events@;;
+static constexpr size_t SD_SOCKET_PORT = @sd_socket_port@;
+static constexpr bool USETCP = @usetcp@;
+static constexpr bool USEUDP = @useudp@;
