@@ -5,7 +5,8 @@ systemd_system_unit_dir = systemd.get_variable(
 )
 
 unit_files = [
-    ['boost-study','xyz.openbmc_project.boost-study.service']
+    ['boost-study','xyz.openbmc_project.boost-study.service'],
+    ['sd-socket','xyz.openbmc_project.sd-socket.service'],
 ]
 
 fs = import('fs')

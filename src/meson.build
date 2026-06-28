@@ -9,3 +9,6 @@ utils_lib = static_library(
 src_inc = include_directories('.')
 
 subdir('boost-study')
+subdir('sd-socket')
+
+subdir('test')

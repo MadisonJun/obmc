@@ -1,0 +1,10 @@
+[Unit]
+Description=systemd socket study
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStart=/usr/libexec/obmc-study/sd-socket
+
+[Install]
+WantedBy=multi-user.target
